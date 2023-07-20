@@ -9,10 +9,27 @@ const io = new Server(server, {
     }
 });
 
+let connected_users = []
+
 io.on('connection', (socket) => {
-  console.log('a user connected');
+  // Keep track of the users connected to the server
+  connected_users.push(socket.id)
+  io.to(socket.id).emit("init user", socket.id)
+  // Emit 
+  io.emit('user_has_logged_in', connected_users.length)
+  // msg[body, socketid]
+  // using socket broadcast to emit to other clients without emitting to self
   socket.on('chat message', (msg) => {
-    io.emit('chat message', msg)
+    socket.broadcast.emit('chat message', msg[0])
+  })
+  socket.on('disconnect', () => {
+    let user_index = connected_users.indexOf(socket.id)
+    connected_users.splice(
+        user_index,
+        1
+    )
+    io.emit('user_has_logged_in', connected_users.length)
+    console.log('disconnect')
   })
 });
 
